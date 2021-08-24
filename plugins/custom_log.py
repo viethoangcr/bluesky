@@ -49,19 +49,27 @@ class CustomLog(core.Entity):
         super().__init__()
         self.prevconfpairs = set()
         self.confinside_all = 0
-        self.conflog: datalog.CSVLogger = datalog.crelog('CONFLOG', None)
+        self.conflog = datalog.crelog('CUSTOM_LOG', 5)
+        self.conflog.start()
+
+    def log(self, s: str):
+        self.conflog.log(s)
+        print(s)
 
     def update(self):
-        ''' Print whatever we needto '''
+        ''' Print whatever we need to'''
 
         confpairs_new = list(set(traf.cd.confpairs) - self.prevconfpairs)
         if confpairs_new:
             self.conflog.log(confpairs_new)
-            print(f"Detect at {sim.simt}: {len(confpairs_new)} new conflict pairs")
-            print(','.join([f"({pair[0]}, {pair[1]})" for pair in confpairs_new]))
+            t = sim.simt
+            self.log(f"Detect at timestamp {int(t // 3600)}:{int(t // 60)}:{t % 60:.2f}: "
+                  f"{len(confpairs_new)} new conflict pairs")
+            self.log(','.join([f"({pair[0]}, {pair[1]})" for pair in confpairs_new]))
 
         self.prevconfpairs = set(traf.cd.confpairs)
 
     def reset(self):
         self.prevconfpairs = set()
         self.conflog.reset()
+        self.conflog.start()
