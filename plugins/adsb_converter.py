@@ -13,7 +13,7 @@ def split_flight(
         split_threshold=pd.Timedelta(seconds=600),
         min_points=100,
         min_duration=pd.Timedelta(seconds=600),
-):
+) -> Dict[Any, pd.DataFrame]:
     if type(split_threshold) == int:
         split_threshold = pd.Timedelta(seconds=split_threshold)
     if type(min_duration) == int:
@@ -61,14 +61,14 @@ def generate_scenario(all_flights: Dict[Any, pd.DataFrame], delta_time=10, min_p
                          f'{row.track_angle:.2f}, {row.geo_altitude:.4f}, {row.calibrated_speed:.4f}'
                 result.append((row.timestamp, cmdstr))
 
-                if row.geo_vertical_rate:
+                if not pd.isna(row.geo_vertical_rate):
                     result.append((row.timestamp, f"VS {row.callsign}, {row.geo_vertical_rate}"))
 
             elif i == traj.shape[0] - 1:
                 result.append((row.timestamp, f'DELAY 5 DEL {row.callsign}'))
             else:
                 if row.date_time - pre_time < min_duration:
-                    vspd = row.geo_vertical_rate if row.geo_vertical_rate else 0
+                    vspd = row.geo_vertical_rate if not pd.isna(row.geo_vertical_rate) else 0
 
                     cmdstr = f'MOVE {row.callsign}, {row.latitude:.7f}, {row.longitude:.7f}, {row.geo_altitude:.4f}, ' \
                              f'{row.track_angle:.2f}, {row.calibrated_speed:.4f}, {vspd:.4f}'
@@ -154,7 +154,7 @@ def flight_auto_timeshift(flights: Dict[Any, pd.DataFrame], seed=None) -> Dict[A
 
     for ac_id in ac_ids:
         trajectory = flights[ac_id].copy()
-        coeff = np.random.uniform(low=0.3)
+        coeff = np.random.uniform(low=0.2, high=0.6)
         trajectory['date_time'] -= coeff * (trajectory['date_time'] - trajectory['date_time'].iloc[0])
         result[ac_id] = trajectory
 
