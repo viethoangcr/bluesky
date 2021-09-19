@@ -14,7 +14,7 @@ from adsb_converter import read_space_based_adsb, split_flight, generate_scenari
 
 import numpy as np
 from pathlib import Path
-import heapq
+# import heapq
 
 np.random.seed(7)
 db = None
@@ -81,9 +81,12 @@ class AdsbDataset(core.Entity):
         return res
 
     def update(self):
-        while self.cmd_queue and self.cmd_queue[0][0] < sim.simt:
-            t, cmd = heapq.heappop(self.cmd_queue)
+        pos = 0
+        while pos < len(self.cmd_queue) and self.cmd_queue[pos][0] < sim.simt:
+            t, cmd = self.cmd_queue[pos]
             stack.stack(cmd)
+            pos += 1
+        self.cmd_queue = self.cmd_queue[pos:]
 
     def reset(self):
         self.cmd_queue = []
@@ -93,5 +96,6 @@ class AdsbDataset(core.Entity):
         ''' Create n flights'''
         flights = self.get_flight(n)
         cmds = generate_scenario(flights)
-        for t, cmd in cmds:
-            heapq.heappush(self.cmd_queue, (t+sim.simt, cmd))
+        self.cmd_queue = sorted(self.cmd_queue + cmds)
+        # for t, cmd in cmds:
+        #     heapq.heappush(self.cmd_queue, (t+sim.simt, cmd))

@@ -15,6 +15,9 @@ from bluesky.tools.geo import kwikpos
 # from bluesky.tools.aero import vtas2cas,ft
 # from bluesky.tools.misc import degto180
 
+import csv
+import sys
+import time
 
 my_log = None
 
@@ -29,7 +32,7 @@ def init_plugin():
         # The name of your plugin
         'plugin_name': 'CUSTOMLOG',
         'plugin_type': 'sim',
-        'update_interval': 5,
+        'update_interval': .1,
 
         # The update function is called after traffic is updated.
         'update': my_log.update,
@@ -43,6 +46,54 @@ def init_plugin():
 
 
 class CustomLog(core.Entity):
+    ''' Example new entity object for BlueSky. '''
+
+    def __init__(self, time_step=15):
+        super().__init__()
+        self.ac_ids = {}
+        self.time_step = time_step
+        stack.stack('PAN WSSS')
+
+        sim.ffmode = True
+        self.flush_time = sim.simt
+        print(sys.argv)
+        try:
+            id = sys.argv.index("--log-output")
+            self.output_file = sys.argv[id+1]
+        except ValueError:
+            self.output_file = f'output/custom_log_{int(time.time())}.csv'
+
+        self.buffer = []
+        self.buffer.append(('sim_time', 'acid', 'lat', 'lon', 'alt'))
+        self.flush_to_file(force=True)
+
+    def flush_to_file(self, force=False):
+        if force or (sim.simt - self.flush_time >= 10*60):
+            print(f"Writing AC position to file {self.output_file} at sim time {sim.simt}")
+            with open(self.output_file, 'at') as csv_file:
+                csvwriter = csv.writer(csv_file, delimiter=',')
+                for line in self.buffer:
+                    csvwriter.writerow(line)
+            self.flush_time = int(sim.simt)
+            self.buffer.clear()
+
+    def update(self):
+        ''' Print whatever we need to'''
+
+        current_time = sim.simt
+        sim.ffmode = True
+
+        for ac_id, lat, lon, alt in zip(traf.id, traf.lat, traf.lon, traf.alt):
+            if ac_id not in self.ac_ids or current_time - self.ac_ids[ac_id] >= self.time_step:
+                self.buffer.append((current_time, ac_id, lat, lon, alt))
+                self.ac_ids[ac_id] = int(current_time)
+        self.flush_to_file()
+
+    def reset(self):
+        pass
+
+
+class ConflictCustomLog(core.Entity):
     ''' Example new entity object for BlueSky. '''
 
     def __init__(self):
