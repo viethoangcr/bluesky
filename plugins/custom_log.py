@@ -32,7 +32,7 @@ def init_plugin():
         # The name of your plugin
         'plugin_name': 'CUSTOMLOG',
         'plugin_type': 'sim',
-        'update_interval': .1,
+        'update_interval': .05,
 
         # The update function is called after traffic is updated.
         'update': my_log.update,
@@ -64,18 +64,25 @@ class CustomLog(core.Entity):
             self.output_file = f'output/custom_log_{int(time.time())}.csv'
 
         self.buffer = []
-        self.buffer.append(('sim_time', 'acid', 'lat', 'lon', 'alt'))
+        self.buffer.append(('sim_time', 'acid', 'lat', 'lon', 'alt', 'cas', 'tas'))
+        self.buffer_empty_count = 0
         self.flush_to_file(force=True)
 
     def flush_to_file(self, force=False):
-        if force or (sim.simt - self.flush_time >= 10*60):
-            print(f"Writing AC position to file {self.output_file} at sim time {sim.simt}")
-            with open(self.output_file, 'at') as csv_file:
-                csvwriter = csv.writer(csv_file, delimiter=',')
-                for line in self.buffer:
-                    csvwriter.writerow(line)
-            self.flush_time = int(sim.simt)
-            self.buffer.clear()
+        if force or (sim.simt - self.flush_time >= 30*60):
+            if len(self.buffer) > 0:
+                print(f"Writing AC position to file {self.output_file} at sim time {sim.simt}")
+                with open(self.output_file, 'at') as csv_file:
+                    csvwriter = csv.writer(csv_file, delimiter=',')
+                    for line in self.buffer:
+                        csvwriter.writerow(line)
+                self.flush_time = int(sim.simt)
+                self.buffer.clear()
+                self.buffer_empty_count = 0
+            else:
+                self.buffer_empty_count += 1
+                if self.buffer_empty_count > 24:
+                    stack.stack("QUIT")
 
     def update(self):
         ''' Print whatever we need to'''
@@ -83,9 +90,9 @@ class CustomLog(core.Entity):
         current_time = sim.simt
         sim.ffmode = True
 
-        for ac_id, lat, lon, alt in zip(traf.id, traf.lat, traf.lon, traf.alt):
+        for ac_id, lat, lon, alt, cas, tas in zip(traf.id, traf.lat, traf.lon, traf.alt, traf.cas, traf.tas):
             if ac_id not in self.ac_ids or current_time - self.ac_ids[ac_id] >= self.time_step:
-                self.buffer.append((current_time, ac_id, lat, lon, alt))
+                self.buffer.append((current_time, ac_id, lat, lon, alt, cas, tas))
                 self.ac_ids[ac_id] = int(current_time)
         self.flush_to_file()
 

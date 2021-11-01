@@ -16,7 +16,7 @@ from bluesky.stack.recorder import savecmd
 from bluesky.tools import geo
 from bluesky.tools.misc import latlon2txt
 from bluesky.tools.aero import cas2tas, casormach2tas, fpm, kts, ft, g0, Rearth, nm, tas2cas,\
-                         vatmos,  vtas2cas, vtas2mach, vcasormach
+                         vatmos,  vtas2cas, vtas2mach, vcasormach, vtasormach
 
 
 from bluesky.traffic.asas import ConflictDetection, ConflictResolution
@@ -243,7 +243,8 @@ class Traffic(Entity):
         self.trk[-n:]  = achdg
 
         # Velocities
-        self.tas[-n:], self.cas[-n:], self.M[-n:] = vcasormach(acspd, acalt)
+        # self.tas[-n:], self.cas[-n:], self.M[-n:] = vcasormach(acspd, acalt)
+        self.tas[-n:], self.cas[-n:], self.M[-n:] = vtasormach(acspd, acalt)
         self.gs[-n:]      = self.tas[-n:]
         hdgrad = np.radians(achdg)
         self.gsnorth[-n:] = self.tas[-n:] * np.cos(hdgrad)

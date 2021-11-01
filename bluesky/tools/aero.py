@@ -167,6 +167,13 @@ def vcasormach(spd, h):
     m   = np.where(ismach, spd, vtas2mach(tas, h))
     return tas, cas, m
 
+def vtasormach(spd, h):
+    ismach = np.logical_and(spd > 0.1, spd < 2.0)
+    tas = np.where(ismach, vmach2tas(spd, h), spd)
+    cas = np.where(ismach, vmach2cas(spd, h), vtas2cas(spd, h))
+    m   = np.where(ismach, spd, vtas2mach(tas, h))
+    return tas, cas, m
+
 def vcasormach2tas(spd, h):
     tas = np.where(np.abs(spd) < 2.0, vmach2tas(spd, h), vcas2tas(spd, h))
     return tas
