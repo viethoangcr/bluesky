@@ -1,5 +1,5 @@
 # Init the SG sectortor
-00:00:00.00>CALL Sectors\SG\fir.scn
+00:00:00.00>CALL ATMRI\fir.scn
 00:00:00.00>PAN WSSS
 00:00:00.00>PAN RN
 00:00:00.00>ZOOM 0.06
